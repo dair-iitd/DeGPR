@@ -1,0 +1,9 @@
+train: /mnt/d/ubuntu_files/mtp_project/data/yolo_data/patched/epith/images/train/
+val:  /mnt/d/ubuntu_files/mtp_project/data/yolo_data/patched/epith/images/val/
+test: /mnt/d/ubuntu_files/mtp_project/data/yolo_data/patched/epith/images/val/
+
+# number of classes
+nc: 1
+
+# class names
+names: ["Epithelial Nuclei"]
