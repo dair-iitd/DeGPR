@@ -1,0 +1,9 @@
+train: /mnt/d/ubuntu_files/mtp_project/data/yolo_data/images/train/
+val:  /mnt/d/ubuntu_files/mtp_project/data/yolo_data/images/test/
+test: /mnt/d/ubuntu_files/mtp_project/data/yolo_data/images/test/
+
+# number of classes
+nc: 2
+
+# class names
+names: ["Epithelial Nuclei","IEL"]

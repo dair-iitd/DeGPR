@@ -208,11 +208,8 @@ parser.add_argument("--local_rank", default=0, type=int)
 # For posterior regularisation
 parser.add_argument('--postreg', action='store_true', default=False,
                     help='trigger posterior regularisation')
-parser.add_argument('--gmm_features', type=int, default=2, help='Number of features to fit in gmm (intensity,size,shape)')
-parser.add_argument('--gmm_version', type=int, default=1, help='Version of gmm : difference class gmms,multiple class gmms')
 parser.add_argument('--embedding_weights', type=str, default='INVALID', help='path to the weights of the embeddings model')
 parser.add_argument('--embedding_pca_weights', type=str, default='INVALID', help='path to the weights of the embeddings pca model')
-parser.add_argument('--embedding_classifier_weights', type = str, default = 'INVALID', help = 'path to weight of the embedding classifier')
 
 
 def _parse_args():
@@ -450,7 +447,7 @@ def main():
             train_metrics = train_epoch(
                 epoch, model, loader_train, optimizer, args,
                 lr_scheduler=lr_scheduler, saver=saver, output_dir=output_dir,
-                amp_autocast=amp_autocast, loss_scaler=loss_scaler, model_ema=model_ema,num_classes=args.num_classes,postreg=args.postreg,gmm_comp=args.gmm_features,shape_model=embed_model, shape_transform=embed_transform, embeddings_pca_model=pca_model, embed_classifier=embed_classifier)
+                amp_autocast=amp_autocast, loss_scaler=loss_scaler, model_ema=model_ema,num_classes=args.num_classes,postreg=args.postreg,shape_model=embed_model, shape_transform=embed_transform, embeddings_pca_model=pca_model)
 
             if args.distributed and args.dist_bn in ('broadcast', 'reduce'):
                 if args.local_rank == 0:
@@ -591,34 +588,6 @@ def calc_postreg_loss_gmm(train_sample, test_sample,gmm_comp):
 
     return gmm_kl(g1,g2)
 
-def Compute_shape_loss(device, embed_classifier, target_shape, pred_shape, target_shape_label):
-    '''
-    Compute loss between Ground truth and predicted Label for shape embedding
-    '''
-    print(np.shape(pred_shape))
-    pred_shape = check_shape(target_shape, pred_shape)
-    #check if both the target and predictions are same
-    target_shape = flatten_list(target_shape)
-    pred_shape = flatten_list(pred_shape)
-    print(np.shape(target_shape), np.shape(pred_shape), np.shape(target_shape_label))
-    criterion = torch.nn.CrossEntropyLoss()
-    criterion = criterion.cuda()
-    target_shape_embeddings =  torch.Tensor(target_shape)
-    pred_shape_embeddings = torch.Tensor(pred_shape)
-    target_shape_label = torch.Tensor(target_shape_label)
-    print(pred_shape_embeddings.size(), target_shape_embeddings.size(), target_shape_label.size())
-    total_loss = 0.0
-    # get predictions
-    output = embed_classifier(pred_shape_embeddings.to(device))
-    loss = criterion(output, target_shape_label)
-    print(loss)
-    # for pred_shape_embedding in enumerate(pred_shape_embeddings):
-    #     output = embed_classifier(pred_shape_embedding)
-    #     loss = loss(output, target_shape_label)
-    #     total_loss +=loss
-    # total_loss = total_loss/len(targte_shape_label)
-    return total_loss
-
 def flatten_list(_2d_list):
     '''
     convert list of list into list
@@ -646,7 +615,7 @@ def check_shape(target_shape, pred_shape):
 
 def train_epoch(
         epoch, model, loader, optimizer, args,
-        lr_scheduler=None, saver=None, output_dir='', amp_autocast=suppress, loss_scaler=None, model_ema=None,num_classes=2,postreg=False,gmm_comp=2,gmm_version=1,shape_model=None,shape_transform=None,embeddings_pca_model=None,embed_classifier=None):
+        lr_scheduler=None, saver=None, output_dir='', amp_autocast=suppress, loss_scaler=None, model_ema=None,num_classes=2,postreg=False,shape_model=None,shape_transform=None,embeddings_pca_model=None):
 
     batch_time_m = AverageMeter()
     data_time_m = AverageMeter()
@@ -831,11 +800,10 @@ def train_epoch(
                 try:
                     target_shape[i1] = np.array(target_shape[i1])
                     pred_shape[i1] = np.array(pred_shape[i1])
-                    if gmm_comp!=4:
-                        target_transform = embeddings_pca_model.transform(target_shape[i1].reshape(1,-1))
-                        target_shape[i1] = target_transform.flatten()
-                        pred_transform = embeddings_pca_model.transform(pred_shape[i1].reshape(1,-1))
-                        pred_shape[i1] = pred_transform.flatten()
+                    target_transform = embeddings_pca_model.transform(target_shape[i1].reshape(1,-1))
+                    target_shape[i1] = target_transform.flatten()
+                    pred_transform = embeddings_pca_model.transform(pred_shape[i1].reshape(1,-1))
+                    pred_shape[i1] = pred_transform.flatten()
                 except:
                     print("pass")
                     pass
@@ -871,59 +839,20 @@ def train_epoch(
                         pred_shape1 = pred_shape1.reshape((pred_shape1.shape[0],1))
                         target_shape1 = target_shape1.reshape((target_shape1.shape[0],1))
 
-                        if gmm_comp == 1:
-                            lreg += calc_postreg_loss_gmm(target_intensity1 , pred_intensity1, gmm_comp)
-                        elif gmm_comp == 2:
-                            lreg += calc_postreg_loss_gmm(np.concatenate((target_intensity1,target_size1)) , np.concatenate((pred_intensity1,pred_size1)), gmm_comp)
-                        elif gmm_comp == 3:
-                            '''
-                            Combined GMM training for Shape size and intensity
-                            '''
+                        
+                        print("Shape size intensity with loss 1 and loss 2")
+                        # target_shape1 = np.subtract(target_shape[i1] , target_shape[i2])
+                        # pred_shape1 = np.subtract(pred_shape[i1] , pred_shape[i2])
 
-                            lreg += calc_postreg_loss_gmm(np.concatenate((target_intensity1,target_size1, target_shape1)) , np.concatenate((pred_intensity1,pred_size1,pred_shape1)), 2)
+                        loss1 = calc_postreg_loss_gmm(np.concatenate((target_intensity1,target_size1)) , np.concatenate((pred_intensity1,pred_size1)), 2)
+                        loss2 = calc_postreg_loss_gmm(target_shape1 , pred_shape1, 2)
 
-                        elif gmm_comp==4:
-                            '''
-                            Train Size and intesity with gmm and Shape with Linear classifier loss
-                            '''
-
-                            loss1 = calc_postreg_loss_gmm(np.concatenate((target_intensity1,target_size1)) , np.concatenate((pred_intensity1,pred_size1)), 2)
-                            #check if shape of predict and target are same
-                            #flatten the list
-
-                            loss2 = Compute_shape_loss(device, embed_classifier, target_shape, pred_shape, target_shape_label)
-
-                            print("Intensity Loss", loss1)
-                            print("Embedding Loss", loss2)
-
-                            lreg +=(loss1 + loss2)
-                        elif gmm_comp ==5:
-                            '''
-                            Train Intensity and Shape
-                            '''
-                            lreg += calc_postreg_loss_gmm(np.concatenate((target_intensity1,target_shape)) , np.concatenate((pred_intensity1,pred_shape)), 2)
-                            print(lreg)
-
-                        elif gmm_comp ==6:
-                            '''
-                            Train Size and Shape
-                            '''
-                            lreg += calc_postreg_loss_gmm(np.concatenate((target_size1,target_shape)) , np.concatenate((pred_size1,pred_shape)), 2)
-
+                        print('Intensity loss : ' , loss1)
+                        print('Embeddings loss :', loss2)
+                        if loss2> 1000:
+                            lreg += (loss1)
                         else:
-                            print("Shape size intensity with loss 1 and loss 2")
-                            # target_shape1 = np.subtract(target_shape[i1] , target_shape[i2])
-                            # pred_shape1 = np.subtract(pred_shape[i1] , pred_shape[i2])
-
-                            loss1 = calc_postreg_loss_gmm(np.concatenate((target_intensity1,target_size1)) , np.concatenate((pred_intensity1,pred_size1)), 2)
-                            loss2 = calc_postreg_loss_gmm(target_shape1 , pred_shape1, 2)
-
-                            print('Intensity loss : ' , loss1)
-                            print('Embeddings loss :', loss2)
-                            if loss2> 1000:
-                                lreg += (loss1)
-                            else:
-                                lreg += (loss1 + 10*loss2)
+                            lreg += (loss1 + 10*loss2)
                         
             lreg /= num_pairs
             print(loss, lreg[0])    
