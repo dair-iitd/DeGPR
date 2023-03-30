@@ -368,7 +368,7 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
                     if epoch+1>opt.warmup_postreg_epochs:
                         # print('Starting Postreg loss')
                         # loss, loss_items = compute_loss(pred, targets.to(device),imgs,None,opt.postregloss, opt.gmm_features, opt.gmm_version, embed_model, embed_transform, pca_model, embed_classifier)  # loss scaled by batch_size
-                        loss, loss_items, intensity_list_iel, intensity_list_epith, size_list_iel, size_list_epith, shape_list_iel, shape_list_epith = compute_loss(pred, targets.to(device),imgs,None,opt.postregloss, opt.gmm_features, opt.gmm_version, embed_model, embed_transform, pca_model, embed_classifier)  # loss scaled by batch_size
+                        loss, loss_items, intensity_list_iel, intensity_list_epith, size_list_iel, size_list_epith, shape_list_iel, shape_list_epith = compute_loss(pred, targets.to(device),imgs,None,0.1,embed_model, embed_transform, pca_model)  # loss scaled by batch_size
                         print(len(intensity_list_iel), len(intensity_list_epith))
                         print(len(size_list_iel), len(size_list_epith))
                         print(len(shape_list_iel), len(shape_list_epith))
@@ -555,9 +555,6 @@ def parse_opt(known=False):
     parser.add_argument('--mAPl', type=float, default=0.5, help='Lower limit of iou for mAP')
     parser.add_argument('--mAPr', type=float, default=0.95, help='Upper limit of iou for mAP')
     parser.add_argument('--postreg', action='store_true', help='add posterior regularisation')
-    parser.add_argument('--postregloss', type=str, choices=['kl', 'l1', 'l2','gmm'], default='kl', help='posterior regularization loss')
-    parser.add_argument('--gmm_features', type=int, default=2, help='Number of features to fit in gmm (intensity,size,shape)')
-    parser.add_argument('--gmm_version', type=int, default=1, help='Version of gmm : difference class gmms,multiple class gmms')
     parser.add_argument('--embedding_weights', type=str, default= 'INVALID', help='path to the weights of the embeddings model', required = False)
     parser.add_argument('--embedding_pca_weights', type=str, default= 'INVALID', help='path to the weights of the embeddings pca model', required = False)
     parser.add_argument('--embedding_classifier_weights', type = str, default = 'INVALID', help = 'path to weight of the embedding classifier', required = False)

@@ -41,34 +41,6 @@ def calc_postreg_loss_gmm(train_sample, test_sample,gmm_comp):
 
     return gmm_kl(g1,g2)
 
-def Compute_shape_loss(device, embed_classifier, target_shape, pred_shape, target_shape_label):
-    '''
-    Compute loss between Ground truth and predicted Label for shape embedding
-    '''
-    print(np.shape(pred_shape))
-    pred_shape = check_shape(target_shape, pred_shape)
-    #check if both the target and predictions are same
-    target_shape = flatten_list(target_shape)
-    pred_shape = flatten_list(pred_shape)
-    print(np.shape(target_shape), np.shape(pred_shape), np.shape(target_shape_label))
-    criterion = torch.nn.CrossEntropyLoss()
-    criterion = criterion.cuda()
-    target_shape_embeddings =  torch.Tensor(target_shape)
-    pred_shape_embeddings = torch.Tensor(pred_shape)
-    target_shape_label = torch.Tensor(target_shape_label)
-    print(pred_shape_embeddings.size(), target_shape_embeddings.size(), target_shape_label.size())
-    total_loss = 0.0
-    # get predictions
-    output = embed_classifier(pred_shape_embeddings.to(device))
-    loss = criterion(output, target_shape_label)
-    print(loss)
-    # for pred_shape_embedding in enumerate(pred_shape_embeddings):
-    #     output = embed_classifier(pred_shape_embedding)
-    #     loss = loss(output, target_shape_label)
-    #     total_loss +=loss
-    # total_loss = total_loss/len(targte_shape_label)
-    return total_loss
-
 def flatten_list(_2d_list):
     '''
     convert list of list into list
@@ -95,7 +67,7 @@ def check_shape(target_shape, pred_shape):
     return pred_shape_new
 
 
-def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, scaler=None,postreg=False,gmm_comp=2,gmm_version=1,num_classes=2,shape_model=None,shape_transform=None,embeddings_pca_model=None,embed_classifier=None):
+def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, scaler=None,postreg=False,num_classes=2,shape_model=None,shape_transform=None,embeddings_pca_model=None):
     model.train()
     metric_logger = utils.MetricLogger(delimiter="  ")
     metric_logger.add_meter("lr", utils.SmoothedValue(window_size=1, fmt="{value:.6f}"))
@@ -288,11 +260,10 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
                     try:
                         target_shape[i1] = np.array(target_shape[i1])
                         pred_shape[i1] = np.array(pred_shape[i1])
-                        if gmm_comp!=4:
-                            target_transform = embeddings_pca_model.transform(target_shape[i1].reshape(1,-1))
-                            target_shape[i1] = target_transform.flatten()
-                            pred_transform = embeddings_pca_model.transform(pred_shape[i1].reshape(1,-1))
-                            pred_shape[i1] = pred_transform.flatten()
+                        target_transform = embeddings_pca_model.transform(target_shape[i1].reshape(1,-1))
+                        target_shape[i1] = target_transform.flatten()
+                        pred_transform = embeddings_pca_model.transform(pred_shape[i1].reshape(1,-1))
+                        pred_shape[i1] = pred_transform.flatten()
                     except:
                         print("pass")
                         pass
@@ -329,7 +300,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq, sc
                             target_shape1 = target_shape1.reshape((target_shape1.shape[0],1))
 
                             if shape_model is None:
-                                lreg += calc_postreg_loss_gmm(target_intensity1 , pred_intensity1, gmm_comp)
+                                lreg += calc_postreg_loss_gmm(target_intensity1 , pred_intensity1)
                             else:
                                 loss1 = calc_postreg_loss_gmm(np.concatenate((target_intensity1,target_size1)) , np.concatenate((pred_intensity1,pred_size1)), 2)
                                 loss2 = calc_postreg_loss_gmm(target_shape1 , pred_shape1, 2)

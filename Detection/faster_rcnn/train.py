@@ -240,13 +240,9 @@ def train_model(opt):
             pca_model = pk.load(open(opt.embedding_pca_weights,'rb'))
             print("PCA model loaded")
 
-        if opt.embedding_classifier_weights != 'INVALID':
-            embed_classifier = get_embedding_classifier(opt.embedding_classifier_weights)
-            print("Model Loaded")
-
     for epoch in range(num_epochs):
         # training for one epoch
-        train_one_epoch(model, optimizer, data_loader_train, device, epoch, print_freq=10,postreg=opt.postreg,gmm_comp=opt.gmm_features,num_classes=num_classes, shape_model=embed_model, shape_transform=embed_transform, embeddings_pca_model=pca_model, embed_classifier=embed_classifier)  # loss scaled by batch_size)
+        train_one_epoch(model, optimizer, data_loader_train, device, epoch, print_freq=10,postreg=opt.postreg,num_classes=num_classes, shape_model=embed_model, shape_transform=embed_transform, embeddings_pca_model=pca_model)  # loss scaled by batch_size)
         # update the learning rate
         lr_scheduler.step()
         # evaluate on the test dataset
@@ -267,11 +263,8 @@ def parse_opt():
     parser.add_argument('--data', type=str, default='INVALID', help='path to the images folder of data')
     parser.add_argument('--save_file', type=str, default='', help='name of the file where you want to store weights')
     parser.add_argument('--postreg', action='store_true', help='add posterior regularisation')
-    parser.add_argument('--gmm_features', type=int, default=2, help='Number of features to fit in gmm (intensity,size,shape)')
-    parser.add_argument('--gmm_version', type=int, default=1, help='Version of gmm : difference class gmms,multiple class gmms')
     parser.add_argument('--embedding_weights', type=str, default='INVALID', help='path to the weights of the embeddings model')
     parser.add_argument('--embedding_pca_weights', type=str, default='INVALID', help='path to the weights of the embeddings pca model')
-    parser.add_argument('--embedding_classifier_weights', type = str, default = 'INVALID', help = 'path to weight of the embedding classifier')
     parser.add_argument('--warmup_postreg_epochs', type = int, default=0, help = 'number of warmup epochs before starting postreg loss')
 
     return parser.parse_args()
