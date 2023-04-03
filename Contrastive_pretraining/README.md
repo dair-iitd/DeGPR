@@ -14,3 +14,6 @@ python train_inc_dec_size_weight_balance.py
 
 ## Make the PCA models
 Look at make_pca_model.ipynb
+
+## Weights
+Pretrained weights can be found [here](https://drive.google.com/file/d/1aazMq2bXBKNwVNSD1F-MeYTEAEmZy3Hl/view?usp=sharing)
