@@ -1,5 +1,5 @@
 # DeGPR
-This is the official github repository of our paper DeGPR : Deep Guided Posterior Regularization For Multi-Class Cell Detection and Counting [paper](https://arxiv.org/abs/2304.00741)
+This is the official github repository of our paper DeGPR : Deep Guided Posterior Regularization For Multi-Class Cell Detection and Counting ([paper](https://arxiv.org/abs/2304.00741))
 
 ## Abstract
 Multi-class cell detection and counting is an essential task for many pathological diagnoses. Manual counting is tedious and often leads to inter-observer variations among pathologists. While there exist multiple, general-purpose, deep learning-based object detection and counting methods, they may not readily transfer to detecting and counting cells in medical images, due to the limited data, presence of tiny overlapping objects, multiple cell types, severe class-imbalance, minute differences in size/shape of cells, etc. In response,  we propose guided posterior regularization  DeGPR, which assists an object detector by guiding it to exploit discriminative features among cells. The features may be pathologist-provided or inferred directly from visual data.  
